@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("PRISMA_DATABASE_URL")
+}
+
+model account {
+  id           String    @id
+  accountId    String
+  providerId   String
+  userId       String
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+  user         user      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model invitation {
+  id             String       @id
+  organizationId String
+  email          String
+  role           String?
+  status         String
+  expiresAt      DateTime
+  inviterId      String
+  user           user         @relation(fields: [inviterId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organization   organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model member {
+  id             String       @id
+  organizationId String
+  userId         String
+  email          String
+  role           String
+  createdAt      DateTime
+  organization   organization @relation(fields: [organizationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model organization {
+  id         String       @id
+  name       String
+  slug       String       @unique(map: "sqlite_autoindex_organization_2")
+  logo       String?
+  createdAt  DateTime
+  metadata   String?
+  invitation invitation[]
+  member     member[]
+}
+
+model passkey {
+  id             String    @id
+  name           String?
+  publicKey      String
+  userId         String
+  webauthnUserID String
+  counter        Int
+  deviceType     String
+  backedUp       Boolean
+  transports     String?
+  createdAt      DateTime?
+  user           user      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model session {
+  id                   String   @id
+  expiresAt            DateTime
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  activeOrganizationId String?
+  impersonatedBy       String?
+  user                 user     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model twoFactor {
+  id          String @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        user   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model user {
+  id               String       @id
+  name             String
+  email            String       @unique(map: "sqlite_autoindex_user_2")
+  emailVerified    Boolean
+  image            String?
+  createdAt        DateTime
+  updatedAt        DateTime
+  twoFactorEnabled Boolean?
+  role             String?
+  banned           Boolean?
+  banReason        String?
+  banExpires       Int?
+  account          account[]
+  invitation       invitation[]
+  passkey          passkey[]
+  session          session[]
+  twoFactor        twoFactor[]
+}
+
+model verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+}
